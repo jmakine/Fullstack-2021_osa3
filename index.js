@@ -1,5 +1,6 @@
 const express = require('express')
 const app = express()
+app.use(express.json())
 
 let notes = [
     {
@@ -25,11 +26,11 @@ let notes = [
   ]
 
 app.get('/', (req, res) => {
-res.send('<h1>Hello World!</h1>')
+    res.send('<h1>Hello World!</h1>')
 })
 
 app.get('/api/persons', (req, res) => {
-  res.json(notes)
+    res.json(notes)
 })
 
 app.get('/info', (req, res) => {
@@ -45,13 +46,55 @@ app.get('/api/persons/:id', (request, response) => {
       } else {
         response.status(404).end()
       }
-  })
+})
 
-  app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
     notes = notes.filter(note => note.id !== id)
     response.status(204).end()
-  })
+})
+
+const generateId = () => {
+    return Math.round(Math.random()*1000000000, 0)
+}
+
+app.post('/api/persons', (request, response) => {
+    const body = request.body
+  
+    if (body.name === "") {
+        return response.status(400).json({ 
+        error: 'name missing' 
+      })
+    }
+
+    if (notes.some(e => e.name === body.name)) {
+        return response.status(400).json({ 
+        error: 'name already exists' 
+      })
+    }
+
+    if (body.number === "") {
+        return response.status(400).json({ 
+        error: 'number missing' 
+      })
+    }
+
+    if (notes.some(e => e.number === body.number)) {
+        return response.status(400).json({ 
+        error: 'number already exists' 
+      })
+    }
+  
+    const note = {
+        id: generateId(),
+        name: body.name,
+        number: body.number
+    }
+  
+    notes = notes.concat(note)
+  
+    response.json(note)
+})
 
 const PORT = 3001
 app.listen(PORT, () => {
