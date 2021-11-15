@@ -14,35 +14,34 @@ morgan.token('body', req => {
   })
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-/*let notes = [
-    {
-        id: 1,
-        name: "Arto Hellas",
-        number: "040-123456"
-    },
-    {
-        id: 2,
-        name: "Ada Lovelace",
-        number: "39-44-5323523"
-      },
-      {
-        id: 3,
-        name: "Dan Abramov",
-        number: "12-43-234345"
-      },
-      {
-        id: 4,
-        name: "Mary Poppendick",
-        number: "39-23-6423122"
-      }
-  ]
-*/
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+  
+    if (error.name === 'CastError') {
+      return response.status(400).send({ error: 'malformatted id' })
+    }
+  
+    next(error)
+  }
 
-/*
+  const requestLogger = (request, response, next) => {
+    console.log('Method:', request.method)
+    console.log('Path:  ', request.path)
+    console.log('Body:  ', request.body)
+    console.log('---')
+    next()
+  }
+  
+  app.use(requestLogger)
+
 app.get('/', (req, res) => {
     res.send('<h1>Hello World!</h1>')
 })
-*/
+
+app.get('/info', (req, res) => {
+    res.send(`<p>Phonebook has info for ${Note.count.name.length} people </p>`
+            + `<p> ${new Date()} </p>`)
+})  
 
 app.get('/api/persons', (request, response) => {
     Note.find({}).then(note => {
@@ -50,58 +49,19 @@ app.get('/api/persons', (request, response) => {
     })
 })
 
-/*
-app.get('/info', (req, res) => {
-    res.send('<p>Phonebook has info for '+ notes.length +' people </p>'
-            + '<p>' +new Date()+ '</p>')
-})  
-*/
-
-app.get('/api/persons/:id', (request, response) => {
-    Note.findById(request.params.id)
-        .then(note => {
-            if (note) {
-                response.json(note)
-            } else {
-                response.status(404).end()
-            }
-        })
-})
-
-app.delete('/api/persons/:id', (request, response) => {
-    Note.findByIdAndRemove(request.params.id)
-    .then(() => {
-      response.status(204).end()
-    })
-})
-
 app.post('/api/persons', (request, response) => {
     const body = request.body
-  
-    if (body.name === "") {
+    if (body.name === "" || body.number === "") 
         return response.status(400).json({ 
-        error: 'name missing' 
-      })
-    }
-
-    if (notes.some(e => e.name === body.name)) {
+                error: 'missing content' 
+        })
+    else if (Note.countDocuments({ name: body.name}) > 0
+        || Note.countDocuments({ number: body.number}) > 0)
+    
         return response.status(400).json({ 
-        error: 'name already exists' 
-      })
-    }
-
-    if (body.number === "") {
-        return response.status(400).json({ 
-        error: 'number missing' 
-      })
-    }
-
-    if (notes.some(e => e.number === body.number)) {
-        return response.status(400).json({ 
-        error: 'number already exists' 
-      })
-    }
-  
+                error: 'unique name and number required' 
+        })
+        
     const note = new Note({
         name: body.name,
         number: body.number
@@ -113,6 +73,38 @@ app.post('/api/persons', (request, response) => {
             response.json(savedAndFormattedNote)
     })
 })
+
+app.get('/api/persons/:id', (request, response, next) => {
+    Note.findById(request.params.id)
+        .then(note => {
+            if (note) {
+                response.json(note)
+            } else {
+                response.status(404).end()
+            }
+        })
+        .catch(error => {
+            console.log(error)
+            next(error)
+        })
+})
+
+
+app.delete('/api/persons/:id', (request, response) => {
+    Note.findByIdAndRemove(request.params.id)
+    .then(result => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
+})
+
+const unknownEndpoint = (request, response) => {
+    response.status(404).send({ error: 'unknown endpoint' })
+  }
+  
+  app.use(unknownEndpoint)
+  
+  app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
