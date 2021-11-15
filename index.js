@@ -1,13 +1,12 @@
-require('dotenv').config()
-
 const express = require('express')
 const app = express()
-app.use(express.json())
-app.use(express.static('build'))
+const cors = require('cors')
+require('dotenv').config()
 const Note = require('./models/note')
 
-const cors = require('cors')
+app.use(express.static('build'))
 app.use(cors())
+app.use(express.json())
 
 var morgan = require('morgan')
 morgan.token('body', req => {
@@ -15,7 +14,7 @@ morgan.token('body', req => {
   })
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-let notes = [
+/*let notes = [
     {
         id: 1,
         name: "Arto Hellas",
@@ -37,36 +36,43 @@ let notes = [
         number: "39-23-6423122"
       }
   ]
+*/
 
+/*
 app.get('/', (req, res) => {
     res.send('<h1>Hello World!</h1>')
 })
+*/
 
-app.get('/api/persons', (req, res) => {
-    res.json(notes)
+app.get('/api/persons', (request, response) => {
+    Note.find({}).then(note => {
+         response.json(note)
+    })
 })
 
+/*
 app.get('/info', (req, res) => {
     res.send('<p>Phonebook has info for '+ notes.length +' people </p>'
             + '<p>' +new Date()+ '</p>')
 })  
+*/
 
 app.get('/api/persons/:id', (request, response) => {
-    //const id = Number(request.params.id)
-    //const note = notes.find(note => note.id === id)
-    Note.findById(request.params.id).then(note => {
-    if (note) {
-        response.json(note)
-      } else {
-        response.status(404).end()
-      }
-    })
+    Note.findById(request.params.id)
+        .then(note => {
+            if (note) {
+                response.json(note)
+            } else {
+                response.status(404).end()
+            }
+        })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    notes = notes.filter(note => note.id !== id)
-    response.status(204).end()
+    Note.findByIdAndRemove(request.params.id)
+    .then(() => {
+      response.status(204).end()
+    })
 })
 
 app.post('/api/persons', (request, response) => {
@@ -101,8 +107,10 @@ app.post('/api/persons', (request, response) => {
         number: body.number
     })
   
-    note.save().then(savedNote => {
-        response.json(savedNote)
+    note.save()
+        .then(savedNote => savedNote.toJSON())
+        .then(savedAndFormattedNote => {
+            response.json(savedAndFormattedNote)
     })
 })
 
