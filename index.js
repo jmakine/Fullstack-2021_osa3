@@ -1,7 +1,10 @@
+require('dotenv').config()
+
 const express = require('express')
 const app = express()
 app.use(express.json())
 app.use(express.static('build'))
+const Note = require('./models/note')
 
 const cors = require('cors')
 app.use(cors())
@@ -49,13 +52,15 @@ app.get('/info', (req, res) => {
 })  
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const note = notes.find(note => note.id === id)
+    //const id = Number(request.params.id)
+    //const note = notes.find(note => note.id === id)
+    Note.findById(request.params.id).then(note => {
     if (note) {
         response.json(note)
       } else {
         response.status(404).end()
       }
+    })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -63,10 +68,6 @@ app.delete('/api/persons/:id', (request, response) => {
     notes = notes.filter(note => note.id !== id)
     response.status(204).end()
 })
-
-const generateId = () => {
-    return Math.round(Math.random()*1000000000, 0)
-}
 
 app.post('/api/persons', (request, response) => {
     const body = request.body
@@ -95,18 +96,17 @@ app.post('/api/persons', (request, response) => {
       })
     }
   
-    const note = {
-        id: generateId(),
+    const note = new Note({
         name: body.name,
         number: body.number
-    }
+    })
   
-    notes = notes.concat(note)
-  
-    response.json(note)
+    note.save().then(savedNote => {
+        response.json(savedNote)
+    })
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
