@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const uniqueValidator = require('mongoose-unique-validator')
   
   const password = process.argv[2]
   const newName = process.argv[3]
@@ -6,12 +7,15 @@ const mongoose = require('mongoose')
   
   const url =
     `mongodb+srv://fullstack:${password}@cluster0.7jqah.mongodb.net/osa3?retryWrites=true`
+  
   mongoose.connect(url)
   
   const noteSchema = new mongoose.Schema({
     name: String,
     number: String,
   })
+
+  noteSchema.plugin(uniqueValidator)
   
   const Note = mongoose.model('Note', noteSchema)
 
