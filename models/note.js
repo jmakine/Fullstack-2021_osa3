@@ -12,18 +12,18 @@ mongoose.connect(url)
     console.log('error connecting to MongoDB:', error.message)
   })
 
-  const noteSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        uniqueCaseInsensitive: true
-      },
-    number: {
-        type: String,
-        required: true,
-        uniqueCaseInsensitive: true
-      }
-  })
+const noteSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  number: {
+    type: String,
+    required: true,
+    unique: true
+  }
+})
 
 noteSchema.set('toJSON', {
   transform: (document, returnedObject) => {
@@ -32,6 +32,5 @@ noteSchema.set('toJSON', {
     delete returnedObject.__v
   }
 })
-
 noteSchema.plugin(uniqueValidator)
 module.exports = mongoose.model('Note', noteSchema)
